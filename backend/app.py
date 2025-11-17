@@ -12,12 +12,18 @@ from tensorflow.keras.applications.mobilenet_v2 import (
 from PIL import Image
 import traceback
 
+from ultralytics import YOLO
+from PIL import Image
+import uuid
+
+
 app = Flask(__name__)
+
 # longgarin CORS biar frontend Vite (5173) aman
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # === Load model utama dan prefilter sekali di awal ===
-MODEL_PATH = "shoe_model_multilabel_fixed.h5"
+MODEL_PATH = "best_trained_shoe_model.h5"
 model = load_model(MODEL_PATH)
 shoe_checker = MobileNetV2(weights="imagenet")
 
@@ -79,39 +85,46 @@ def analyze():
     file.save(file_path)
 
     try:
-        # === Load gambar ===
-        img = Image.open(file_path).convert("RGB").resize(IMG_SIZE)
+        # ===========================================
+        # 1. AUTO-CROP YOLO SEPATU
+        # ===========================================
+        try:
+            cropped_path = auto_crop_shoe(file_path)
+        except:
+            cropped_path = file_path  # fallback
+
+        # ===========================================
+        # 2. PREPROCESS GAMBAR UNTUK MODEL
+        # ===========================================
+        img = Image.open(cropped_path).convert("RGB").resize(IMG_SIZE)
         x = np.expand_dims(np.array(img), axis=0)
         x_pre = preprocess_input(x)
 
-        # === Prefilter lebih toleran (supaya sepatu yang dipakai orang tidak ditolak) ===
+        # ===========================================
+        # 3. PREFILTER (apakah gambar mengandung sepatu?)
+        # ===========================================
         preds = shoe_checker.predict(x_pre)
         decoded = decode_predictions(preds, top=5)[0]
         labels = [(lbl.lower(), float(score)) for (_, lbl, score) in decoded]
-        print("Detected labels:", labels)
 
         shoe_keywords = ["shoe", "sneaker", "boot", "footwear", "slipper"]
-        # yang benar-benar bukan sepatu
-        banned_keywords = [
-            "building", "mosque", "church", "temple", "cathedral",
-            "logo", "text", "screen", "poster", "advertisement",
-            "tower", "wall", "window", "bridge"
-        ]
+        banned_keywords = ["building", "mosque", "church", "logo", "screen", "tower"]
 
-        shoe_conf   = sum(s for lbl, s in labels if any(k in lbl for k in shoe_keywords))
+        shoe_conf = sum(s for lbl, s in labels if any(k in lbl for k in shoe_keywords))
         banned_conf = sum(s for lbl, s in labels if any(b in lbl for b in banned_keywords))
-        avg_conf    = np.mean([s for _, s in labels])
+        avg_conf = np.mean([s for _, s in labels])
 
-        # hanya tolak jika tidak ada indikasi sepatu dan objek dominan adalah non-sepatu
         if shoe_conf < 0.10 and (banned_conf > 0.25 or avg_conf < 0.15):
             log_prediction({
                 "status": "rejected",
                 "filename": file.filename,
                 "detected_labels": labels
             })
-            return jsonify({"error": "Gambar tidak dikenali sebagai sepatu. Pastikan foto menampilkan sepatu dengan jelas."}), 400
+            return jsonify({"error": "Gambar tidak dikenali sebagai sepatu."}), 400
 
-        # === Prediksi model utama ===
+        # ===========================================
+        # 4. PREDIKSI MODEL UTAMA (EFFICIENTNET)
+        # ===========================================
         pred_bahan, pred_kotor = model.predict(x_pre)
         pred_bahan = safe_softmax(pred_bahan[0])
         pred_kotor = safe_softmax(pred_kotor[0])
@@ -119,15 +132,19 @@ def analyze():
         bahan_idx = int(np.argmax(pred_bahan))
         kotor_idx = int(np.argmax(pred_kotor))
 
+        bahan_name = idx_to_bahan.get(bahan_idx, "unknown")
+        kotor_name = idx_to_kotor.get(kotor_idx, "unknown")
+
         bahan_conf = round(float(np.max(pred_bahan)) * 100, 2)
         kotor_conf = round(float(np.max(pred_kotor)) * 100, 2)
 
-        bahan_name = idx_to_bahan.get(bahan_idx, "unknown")
-        kotor_name = idx_to_kotor.get(kotor_idx, "unknown")
-        rekom = rekom_map.get(bahan_name, {}).get(kotor_name, "Gunakan metode pembersihan lembut sesuai bahan.")
+        rekom = rekom_map.get(bahan_name, {}).get(
+            kotor_name, "Gunakan metode pembersihan lembut sesuai bahan."
+        )
 
         result = {
             "filename": file.filename,
+            "cropped_used": cropped_path != file_path,
             "bahan": bahan_name,
             "tingkat_kotor": kotor_name,
             "confidence_bahan": bahan_conf,
@@ -137,12 +154,14 @@ def analyze():
         }
 
         log_prediction({"status": "success", **result})
+
         return jsonify({"filename": file.filename, "prediction": result})
 
     except Exception as e:
         traceback.print_exc()
         log_prediction({"status": "error", "filename": file.filename, "error": str(e)})
         return jsonify({"error": f"Kesalahan server: {str(e)}"}), 500
+
 
 @app.route("/logs", methods=["GET"])
 def get_logs():
@@ -164,6 +183,39 @@ def get_logs():
                 except Exception:
                     pass
     return jsonify(rows)
+
+#YOLO FUNC
+def auto_crop_shoe(input_path, output_dir="uploads/cropped"):
+    os.makedirs(output_dir, exist_ok=True)
+
+    results = yolo_model(input_path)
+    boxes = results[0].boxes
+
+    if boxes is None or len(boxes) == 0:
+        # kalau tidak ketemu apa-apa, pakai gambar asli
+        return input_path
+
+    # ambil bbox dengan confidence tertinggi
+    best = boxes[boxes.cls.argmax()] if len(boxes) > 1 else boxes[0]
+    x1, y1, x2, y2 = best.xyxy[0].tolist()
+
+    img = Image.open(input_path).convert("RGB")
+    w, h = img.size
+
+    # pastikan bounding box masih di dalam gambar
+    x1 = max(0, int(x1))
+    y1 = max(0, int(y1))
+    x2 = min(w, int(x2))
+    y2 = min(h, int(y2))
+
+    cropped = img.crop((x1, y1, x2, y2))
+
+    out_name = f"crop_{uuid.uuid4().hex}.jpg"
+    out_path = os.path.join(output_dir, out_name)
+    cropped.save(out_path, format="JPEG", quality=95)
+
+    return out_path
+
 
 if __name__ == "__main__":
     app.run(debug=True)
