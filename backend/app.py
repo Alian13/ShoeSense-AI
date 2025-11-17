@@ -23,7 +23,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # === Load model utama dan prefilter sekali di awal ===
-MODEL_PATH = "best_trained_shoe_model.h5"
+MODEL_PATH = "best_model.keras"
 model = load_model(MODEL_PATH)
 shoe_checker = MobileNetV2(weights="imagenet")
 
