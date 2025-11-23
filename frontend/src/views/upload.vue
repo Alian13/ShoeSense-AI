@@ -67,11 +67,9 @@
           :disabled="loading || !selectedFile"
           @click="uploadImage"
         >
-          {{ loading ? "Menganalisis..." : "🔍 Analisis Sekarang" }}
+          {{ loading ? "Menganalisis..." : "Analisis Sekarang" }}
         </button>
-        <button class="camera-btn" @click="toggleCamera">
-          📸 Foto Sekarang
-        </button>
+        <button class="camera-btn" @click="toggleCamera">Foto Sekarang</button>
       </div>
 
       <!-- Hasil -->

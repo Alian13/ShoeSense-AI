@@ -12,6 +12,10 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
+
+
+
+# === Load dataset dari folder ===
 BASE_DIR = os.path.join(os.getcwd(), "dataset")
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 8
@@ -125,36 +129,193 @@ model.save(MODEL_OUT)
 print(f"✅ Model disimpan ke {MODEL_OUT}")
 
 # =========================================================
-# ️📈 PLOT TRAINING GRAPH (LOSS & ACCURACY)
+# 📊 DIAGRAM BATANG – PERFORMANSI MODEL (lebih mudah dibaca)
 # =========================================================
+
+# Hitung nilai terakhir (epoch terakhir)
+final_train_bahan_acc = history.history["bahan_accuracy"][-1]
+final_val_bahan_acc   = history.history["val_bahan_accuracy"][-1]
+final_train_kotor_acc = history.history["kotor_accuracy"][-1]
+final_val_kotor_acc   = history.history["val_kotor_accuracy"][-1]
+
+final_train_bahan_loss = history.history["bahan_loss"][-1]
+final_val_bahan_loss   = history.history["val_bahan_loss"][-1]
+final_train_kotor_loss = history.history["kotor_loss"][-1]
+final_val_kotor_loss   = history.history["val_kotor_loss"][-1]
+
+# -------------------------
+# 🔥 Diagram batang ACCURACY
+# -------------------------
+labels = ["Train Bahan", "Val Bahan", "Train Kotor", "Val Kotor"]
+acc_values = [
+    final_train_bahan_acc,
+    final_val_bahan_acc,
+    final_train_kotor_acc,
+    final_val_kotor_acc
+]
+
+plt.figure(figsize=(10, 6))
+bars = plt.bar(labels, acc_values, color=["#4caf50", "#2196f3", "#ff9800", "#9c27b0"])
+plt.title("Final Accuracy Per Output (Bahan & Kotor)")
+plt.ylabel("Accuracy")
+plt.ylim(0, 1)
+
+# Tampilkan nilai di atas batang
+for bar, val in zip(bars, acc_values):
+    plt.text(bar.get_x() + bar.get_width()/2, val + 0.02, f"{val:.3f}", ha='center')
+
+plt.savefig("evaluation/bar_accuracy.png")
+plt.close()
+
+# -------------------------
+# 🔥 Diagram batang LOSS
+# -------------------------
+loss_values = [
+    final_train_bahan_loss,
+    final_val_bahan_loss,
+    final_train_kotor_loss,
+    final_val_kotor_loss
+]
+
+plt.figure(figsize=(10, 6))
+bars = plt.bar(labels, loss_values, color=["#e91e63", "#3f51b5", "#ff5722", "#8bc34a"])
+plt.title("Final Loss Per Output (Bahan & Kotor)")
+plt.ylabel("Loss")
+
+for bar, val in zip(bars, loss_values):
+    plt.text(bar.get_x() + bar.get_width()/2, val + 0.02, f"{val:.3f}", ha='center')
+
+plt.savefig("evaluation/bar_loss.png")
+plt.close()
+
+# =========================================================
+# 📉 ERROR RATE & STATISTIK TAMBAHAN
+# =========================================================
+error_stats = {
+    "bahan_train_error": round(1 - final_train_bahan_acc, 4),
+    "bahan_val_error": round(1 - final_val_bahan_acc, 4),
+    "kotor_train_error": round(1 - final_train_kotor_acc, 4),
+    "kotor_val_error": round(1 - final_val_kotor_acc, 4),
+    "total_images": len(image_paths),
+    "train_images": len(X_train),
+    "val_images": len(X_val),
+}
+
+# Simpan statistik sebagai JSON
+with open("evaluation/error_stats.json", "w") as f:
+    json.dump(error_stats, f, indent=2)
+
+# =========================================================
+# 📚 STATISTIK PER-KELAS (Canvas / Kulit / Suede)
+# =========================================================
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns
+import numpy as np
+
 os.makedirs("evaluation", exist_ok=True)
 
-# ----- Loss -----
-plt.figure(figsize=(10, 6))
-plt.plot(history.history["bahan_loss"], label="Train Bahan Loss")
-plt.plot(history.history["kotor_loss"], label="Train Kotor Loss")
-plt.plot(history.history["val_bahan_loss"], label="Val Bahan Loss")
-plt.plot(history.history["val_kotor_loss"], label="Val Kotor Loss")
-plt.title("Training & Validation Loss")
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
-plt.legend()
-plt.grid(True)
-plt.savefig("evaluation/loss_curve.png")
+# =============================
+# 🔍 Prediksi ke validation set
+# =============================
+pred_bahan_val, pred_kotor_val = model.predict(X_val)
+y_true = np.argmax(y_bahan_val, axis=1)
+y_pred = np.argmax(pred_bahan_val, axis=1)
+class_names = le_bahan.classes_
+
+# ==========================================
+# 1️⃣ CONFUSION MATRIX (PNG)
+# ==========================================
+cm = confusion_matrix(y_true, y_pred)
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+            xticklabels=class_names, yticklabels=class_names)
+plt.title("Confusion Matrix - Klasifikasi Bahan")
+plt.xlabel("Predicted")
+plt.ylabel("True")
+plt.savefig("evaluation/confusion_matrix_bahan.png")
 plt.close()
 
-# ----- Accuracy -----
-plt.figure(figsize=(10, 6))
-plt.plot(history.history["bahan_accuracy"], label="Train Bahan Acc")
-plt.plot(history.history["kotor_accuracy"], label="Train Kotor Acc")
-plt.plot(history.history["val_bahan_accuracy"], label="Val Bahan Acc")
-plt.plot(history.history["val_kotor_accuracy"], label="Val Kotor Acc")
-plt.title("Training & Validation Accuracy")
-plt.xlabel("Epoch")
+# ==========================================
+# 2️⃣ ACCURACY PER KELAS (Bar Chart)
+# ==========================================
+class_accuracy = cm.diagonal() / cm.sum(axis=1)
+
+plt.figure(figsize=(8, 6))
+bars = plt.bar(class_names, class_accuracy, color=["#4caf50", "#2196f3", "#ff5722"])
+plt.title("Accuracy Per Kelas (Bahan)")
 plt.ylabel("Accuracy")
-plt.legend()
-plt.grid(True)
-plt.savefig("evaluation/accuracy_curve.png")
+plt.ylim(0, 1)
+
+for bar, acc in zip(bars, class_accuracy):
+    plt.text(bar.get_x() + bar.get_width()/2, acc + 0.02, f"{acc:.2f}", ha='center')
+
+plt.savefig("evaluation/class_accuracy_bahan.png")
 plt.close()
 
-print("📊 Grafik training tersimpan di folder /evaluation/")
+# ==========================================
+# 3️⃣ DETAIL PRECISION / RECALL / F1
+# ==========================================
+report = classification_report(y_true, y_pred, target_names=class_names, output_dict=True)
+
+precision = [report[c]["precision"] for c in class_names]
+recall    = [report[c]["recall"] for c in class_names]
+f1        = [report[c]["f1-score"] for c in class_names]
+
+x = np.arange(len(class_names))
+w = 0.25
+
+plt.figure(figsize=(10, 6))
+plt.bar(x - w, precision, width=w, label="Precision", color="#2196f3")
+plt.bar(x, recall, width=w, label="Recall", color="#4caf50")
+plt.bar(x + w, f1, width=w, label="F1-score", color="#ff9800")
+
+plt.xticks(x, class_names)
+plt.title("Precision / Recall / F1-score Per Kelas")
+plt.ylabel("Score")
+plt.ylim(0, 1)
+plt.legend()
+
+plt.savefig("evaluation/class_precision_recall_f1_bahan.png")
+plt.close()
+
+# ==========================================
+# 4️⃣ MISCLASSIFICATION (Grafik Kesalahan)
+# ==========================================
+mis = cm.copy()
+np.fill_diagonal(mis, 0)   # nolkan yang benar
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(mis, annot=True, fmt="d", cmap="Reds",
+            xticklabels=class_names, yticklabels=class_names)
+plt.title("Jumlah Salah Prediksi Antar Kelas")
+plt.xlabel("Predicted")
+plt.ylabel("True")
+plt.savefig("evaluation/class_misclassification_bahan.png")
+plt.close()
+
+# ==========================================
+# 5️⃣ DISTRIBUSI DATASET PER KELAS (Bar Chart)
+# ==========================================
+unique, counts = np.unique(bahan_encoded, return_counts=True)
+
+plt.figure(figsize=(8, 6))
+bars = plt.bar(class_names, counts, color=["#673ab7", "#009688", "#795548"])
+plt.title("Distribusi Dataset Per Kelas (Bahan)")
+plt.ylabel("Jumlah Gambar")
+
+for bar, val in zip(bars, counts):
+    plt.text(bar.get_x() + bar.get_width()/2, val + 5, str(val), ha='center')
+
+plt.savefig("evaluation/dataset_distribution.png")
+plt.close()
+
+print("📊 Statistik lengkap berhasil dibuat:")
+print(" - evaluation/confusion_matrix_bahan.png")
+print(" - evaluation/class_accuracy_bahan.png")
+print(" - evaluation/class_precision_recall_f1_bahan.png")
+print(" - evaluation/class_misclassification_bahan.png")
+print(" - evaluation/dataset_distribution.png")
+
+print("\n📌 Statistik kesalahan disimpan di evaluation/error_stats.json")
+print("📊 Grafik batang tersimpan di evaluation/bar_accuracy.png dan bar_loss.png")

@@ -1,6 +1,6 @@
 # ShoeSense AI
 
-Website untuk menganalisis tingkat kebersihan sepatu dan bahan sepatu berbasis AI menggunakan model deep learning.
+Website untuk menganalisis tingkat kebersihan sepatu dan bahan sepatu berbasis AI.
 
 ## Fitur
 
