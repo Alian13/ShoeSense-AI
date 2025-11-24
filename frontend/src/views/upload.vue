@@ -6,9 +6,6 @@
         <img src="/LogoShoeSense.png" alt="ShoeSense AI Logo" class="logo" />
         <h1 class="brand">ShoeSense AI</h1>
       </div>
-      <button class="history-btn" @click="toggleHistory">
-        <span>Riwayat</span>
-      </button>
     </header>
 
     <!-- Upload Area -->
@@ -98,38 +95,6 @@
 
       <p v-if="error" class="error-msg">{{ error }}</p>
     </main>
-
-    <!-- Riwayat -->
-    <transition name="slide">
-      <aside v-if="showHistory" class="history-panel">
-        <div class="history-header">
-          <h2>Riwayat Analisis</h2>
-          <div class="history-actions">
-            <button class="clear-all" @click="clearAllHistory">
-              Hapus Semua
-            </button>
-            <button class="close-btn" @click="toggleHistory">✖</button>
-          </div>
-        </div>
-        <div v-if="!history.length" class="empty-history">
-          Belum ada riwayat.
-        </div>
-        <div
-          v-for="(item, i) in history"
-          :key="i"
-          class="history-item"
-          @click="viewHistory(item)"
-        >
-          <img :src="item.image || fallbackThumb" alt="thumb" class="thumb" />
-          <div class="history-info">
-            <strong>{{ item.result.bahan }}</strong>
-            <p>{{ item.result.tingkat_kotor }}</p>
-            <small>{{ item.timestamp }}</small>
-          </div>
-          <button class="delete-btn" @click.stop="deleteHistory(i)">🗑️</button>
-        </div>
-      </aside>
-    </transition>
   </div>
 </template>
 
@@ -310,64 +275,87 @@ function viewHistory(item) {
 
 <style scoped>
 /* General */
+
+.preview-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 16px;
+}
+
+.preview-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* GENERAL APP CONTAINER */
 .app-container {
-  background: #f8fafc;
+  background: #f9fafb;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: "Poppins", sans-serif;
-  color: #1e293b;
+  font-family: "Inter", "Poppins", sans-serif;
+  color: #1f2937;
 }
 
-/* Header */
+/* =========================
+   HEADER
+   ========================= */
 .app-header {
   background: #ffffff;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.8rem 2rem;
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 0.9rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
 }
+
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-}
-.logo {
-  width: 32px;
-  height: 32px;
-}
-.brand {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #1d4ed8;
-}
-.history-btn {
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
+  gap: 0.7rem;
 }
 
-/* Main */
+.logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+}
+
+.brand {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2563eb; /* biru elegan */
+}
+
+.history-btn:hover {
+  background: #1d4ed8;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.35);
+}
+
+/* =========================
+   UPLOAD MAIN AREA
+   ========================= */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  padding: 2.5rem 1rem;
 }
+
 .upload-box {
-  background: #fff;
-  border: 2px dashed #93c5fd;
+  background: #ffffff;
+  border: 2px dashed #bfdbfe;
   border-radius: 18px;
-  width: 600px;
+  width: 580px;
   max-width: 90%;
-  height: 340px;
+  height: 330px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -375,282 +363,336 @@ function viewHistory(item) {
   text-align: center;
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, transform 0.2s ease;
 }
+
+.upload-box:hover {
+  border-color: #60a5fa;
+  transform: translateY(-2px);
+}
+
 .upload-placeholder h2 {
+  margin-top: 1rem;
   font-size: 1.15rem;
-  margin-top: 1rem;
-  color: #1e3a8a;
+  color: #1d4ed8;
+  font-weight: 600;
 }
+
 .upload-placeholder p {
-  color: #6b7280;
-  margin-top: 0.4rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-top: 0.35rem;
 }
 
-/* Loading overlay */
-.loading-overlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
+/* PREVIEW IMAGE */
+.preview-container {
+  position: absolute;
+  inset: 0;
+  background: #f1f5f9;
+}
+
+.preview-img {
   width: 100%;
-  animation: fadeIn 0.3s ease;
-}
-.spinner {
-  width: 64px;
-  height: 64px;
-  border: 6px solid #dbeafe;
-  border-top-color: #2563eb;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-.loading-text {
-  margin-top: 1rem;
-  color: #1e3a8a;
-  font-weight: 500;
-  font-size: 1rem;
-  animation: pulse 1.6s ease-in-out infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
 }
 
-/* Camera */
+/* CANCEL BUTTON ON PREVIEW */
+.cancel-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.48);
+  color: #fff;
+  transition: 0.2s;
+}
+
+.cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+/* =========================
+   CAMERA MODE
+   ========================= */
 .camera-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
 }
+
 .camera-wrapper video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: 14px;
 }
-.capture-btn,
-.cancel-btn {
-  position: absolute;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
+
 .capture-btn {
+  position: absolute;
   bottom: 14px;
   right: 14px;
   background: #2563eb;
-  color: #fff;
-}
-.cancel-btn {
-  top: 10px;
-  right: 10px;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-}
-.cancel-btn:hover {
-  background: rgba(220, 38, 38, 0.85);
+  color: white;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-/* Buttons */
+.capture-btn:hover {
+  background: #1e40af;
+}
+
+/* =========================
+   LOADING OVERLAY
+   ========================= */
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.spinner {
+  width: 55px;
+  height: 55px;
+  border: 5px solid #dbeafe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 1rem;
+  color: #1d4ed8;
+  font-size: 1rem;
+  font-weight: 500;
+  animation: pulse 1.4s infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* =========================
+   BUTTONS
+   ========================= */
 .action-buttons {
   display: flex;
   gap: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 1.8rem;
 }
+
 .analyze-btn,
 .camera-btn {
-  padding: 12px 20px;
-  border: none;
+  padding: 13px 22px;
   border-radius: 10px;
   font-size: 1rem;
+  border: none;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.2s ease;
+  transition: 0.25s ease;
 }
+
 .analyze-btn {
-  background: #3b82f6;
-  color: #fff;
-}
-.analyze-btn:hover {
   background: #2563eb;
+  color: white;
+}
+
+.analyze-btn:hover:not(:disabled) {
+  background: #1d4ed8;
   transform: translateY(-2px);
 }
+
+.analyze-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .camera-btn {
   background: #e2e8f0;
 }
+
 .camera-btn:hover {
   background: #cbd5e1;
   transform: translateY(-2px);
 }
 
-/* Result */
+/* =========================
+   RESULT CARD
+   ========================= */
 .result-card {
-  background: #fff;
+  background: #ffffff;
+  padding: 1.6rem 2rem;
   border-radius: 16px;
-  padding: 1.5rem 2rem;
-  width: 500px;
   margin-top: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  animation: fadeIn 0.6s ease;
+  width: 480px;
+  max-width: 95%;
+  box-shadow: 0 3px 18px rgba(0, 0, 0, 0.08);
+  animation: fadeIn 0.35s ease;
 }
+
 .result-card h2 {
-  color: #1e3a8a;
+  color: #1d4ed8;
   margin-bottom: 1rem;
+  font-size: 1.3rem;
+  font-weight: 600;
 }
+
 .result-field {
   margin-bottom: 0.5rem;
+  font-size: 1rem;
 }
+
 .result-field span {
   font-weight: 600;
   color: #0f172a;
 }
+
 .error-msg {
-  color: #dc2626;
   margin-top: 10px;
+  color: #dc2626;
+  font-weight: 500;
 }
 
-/* Fade-in + scale animation */
-.fade-scale-enter-active {
-  transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-.fade-scale-enter-from {
-  opacity: 0;
-  transform: scale(0.9);
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* History panel */
+/* =========================
+   HISTORY SIDEBAR
+   ========================= */
 .history-panel {
   position: fixed;
   top: 0;
   right: 0;
-  width: 320px;
+  width: 330px;
   height: 100%;
-  background: #fff;
+  background: #ffffff;
   border-left: 1px solid #e5e7eb;
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.06);
+  box-shadow: -3px 0 12px rgba(0, 0, 0, 0.08);
   padding: 1rem;
   overflow-y: auto;
+  animation: slideIn 0.35s ease;
 }
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 .history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
+.clear-all {
+  background: #ef4444;
+  color: #fff;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.clear-all:hover {
+  background: #dc2626;
+}
+
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   cursor: pointer;
+  color: #475569;
 }
+
 .history-item {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  border-bottom: 1px solid #e5e7eb;
+  gap: 12px;
   padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: 0.2s ease;
 }
+
+.history-item:hover {
+  background: #f8fafc;
+}
+
 .thumb {
-  width: 60px;
-  height: 60px;
+  width: 58px;
+  height: 58px;
   object-fit: cover;
   border-radius: 8px;
 }
-.history-info p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #475569;
+
+.delete-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #ef4444;
+  font-size: 1rem;
 }
+
+.delete-btn:hover {
+  color: #dc2626;
+}
+
+/* No History */
 .empty-history {
   color: #94a3b8;
   text-align: center;
   margin-top: 2rem;
 }
 
-/* Animations */
+/* TRANSITIONS */
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform 0.4s ease;
+  transition: transform 0.35s ease;
 }
 .slide-enter-from,
 .slide-leave-to {
   transform: translateX(100%);
 }
-
-/* Perbaikan tombol Riwayat di navbar */
-.history-btn {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  padding: 8px 18px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: 0.3s ease;
+.fade-scale-enter-active {
+  transition: all 0.3s ease;
 }
-.history-btn:hover {
-  background: #1e40af;
-  box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+.fade-scale-enter-from {
+  opacity: 0;
+  transform: scale(0.95);
 }
-
-/* Tombol dan layout riwayat */
-.history-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.fade-scale-leave-active {
+  transition: all 0.2s ease;
 }
-.clear-all {
-  background: #ef4444;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-.clear-all:hover {
-  background: #dc2626;
-}
-.delete-btn {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: #ef4444;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: 0.2s;
-}
-.delete-btn:hover {
-  color: #dc2626;
-}
-.history-item {
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.history-item:hover {
-  background: #f1f5f9;
+.fade-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
 }
 </style>
