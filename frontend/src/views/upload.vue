@@ -20,8 +20,19 @@
 
         <!-- Mode Loading -->
         <div v-else-if="loading" class="loading-overlay">
-          <div class="spinner"></div>
-          <p class="loading-text">{{ loadingText }}</p>
+          <div class="scan-full">
+            <img
+              v-if="previewUrl"
+              :src="previewUrl"
+              class="scan-bg"
+              alt="scanning"
+            />
+
+            <div class="scan-line"></div>
+            <div class="scan-glow"></div>
+
+            <p class="scan-text">{{ loadingText }}</p>
+          </div>
         </div>
 
         <!-- Mode Upload -->
@@ -76,16 +87,6 @@
           <div class="result-field"><span>Bahan:</span> {{ result.bahan }}</div>
           <div class="result-field">
             <span>Tingkat Kebersihan:</span> {{ displayTingkat }}
-          </div>
-          <div class="result-field">
-            <span>Keyakinan:</span>
-            {{
-              (
-                ((result.confidence_bahan || 0) +
-                  (result.confidence_kotor || 0)) /
-                2
-              ).toFixed(1)
-            }}%
           </div>
           <div class="result-field">
             <span>Rekomendasi:</span> {{ result.rekomendasi }}
@@ -274,7 +275,104 @@ function viewHistory(item) {
 </script>
 
 <style scoped>
-/* General */
+/* ============================
+   FULL FRAME SCANNER
+   ============================ */
+
+.scan-full {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(240, 244, 255, 0.3);
+  backdrop-filter: blur(4px);
+  border: 2px solid rgba(96, 165, 250, 0.5);
+  box-shadow: 0 0 25px rgba(96, 165, 250, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* foto sebagai background */
+.scan-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.45;
+  filter: blur(2px);
+}
+
+/* garis scan */
+.scan-line {
+  position: absolute;
+  top: -60px;
+  left: 0;
+  width: 100%;
+  height: 80px;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(96, 165, 250, 0) 0%,
+    rgba(96, 165, 250, 0.35) 50%,
+    rgba(96, 165, 250, 0) 100%
+  );
+  animation: scanMove 2.3s ease-in-out infinite;
+}
+
+@keyframes scanMove {
+  0% {
+    top: -80px;
+  }
+  50% {
+    top: 100%;
+  }
+  100% {
+    top: -80px;
+  }
+}
+
+/* glow bingkai */
+.scan-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  box-shadow: 0 0 40px rgba(59, 130, 246, 0.35) inset;
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* teks loading */
+.scan-text {
+  z-index: 5;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e40af;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
+  animation: textPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
 
 .preview-img {
   max-width: 100%;
@@ -298,7 +396,7 @@ function viewHistory(item) {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: "Inter", "Poppins", sans-serif;
+  font-family: "Avenir", Helvetica, Arial, sans-serif;
   color: #1f2937;
 }
 
@@ -328,9 +426,11 @@ function viewHistory(item) {
 }
 
 .brand {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #2563eb; /* biru elegan */
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  letter-spacing: 0.3px;
+  color: #1e40af; /* lebih elegan */
 }
 
 .history-btn:hover {
