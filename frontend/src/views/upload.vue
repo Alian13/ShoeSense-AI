@@ -115,7 +115,6 @@ const showHistory = ref(false);
 const history = ref([]);
 const resultRef = ref(null);
 
-// teks dinamis saat loading
 const loadingText = ref("AI sedang menganalisis gambar...");
 const loadingMessages = [
   "Menganalisis bahan sepatu...",
@@ -278,6 +277,12 @@ function viewHistory(item) {
 /* ============================
    FULL FRAME SCANNER
    ============================ */
+
+.result-field {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  text-align: justify;
+}
 
 .scan-full {
   position: absolute;
