@@ -8,7 +8,6 @@ Website untuk menganalisis tingkat kebersihan sepatu dan bahan sepatu berbasis A
 - Kamera langsung
 - Analisis kebersihan
 - Deteksi bahan sepatu
-- Riwayat analisis
 
 ## Teknologi
 
