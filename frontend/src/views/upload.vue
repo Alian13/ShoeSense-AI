@@ -58,7 +58,7 @@
               />
             </svg>
             <h2>Unggah atau ambil foto sepatu kamu untuk dianalisis</h2>
-            <p>Klik untuk memilih atau seret gambar ke sini</p>
+            <p>Klik untuk memilih atau foto gambar ke sini</p>
           </label>
 
           <div v-if="previewUrl" class="preview-container">
@@ -66,18 +66,6 @@
             <button class="cancel-btn" @click="cancelUpload">✖</button>
           </div>
         </template>
-      </div>
-
-      <!-- Buttons -->
-      <div class="action-buttons">
-        <button
-          class="analyze-btn"
-          :disabled="loading || !selectedFile"
-          @click="uploadImage"
-        >
-          {{ loading ? "Menganalisis..." : "Analisis Sekarang" }}
-        </button>
-        <button class="camera-btn" @click="toggleCamera">Foto Sekarang</button>
       </div>
 
       <!-- Hasil -->
@@ -102,10 +90,9 @@
 <script setup>
 import { ref, computed, onBeforeUnmount, nextTick } from "vue";
 
-const API_BASE = "http://127.0.0.1:5000";
+const API_BASE = "http://72.61.215.197:5000";
 const selectedFile = ref(null);
 const previewUrl = ref(null);
-const useCamera = ref(false);
 const videoRef = ref(null);
 let stream = null;
 const result = ref(null);
@@ -204,33 +191,6 @@ async function uploadImage() {
     clearInterval(loadingInterval);
     loading.value = false;
   }
-}
-
-function toggleCamera() {
-  useCamera.value = !useCamera.value;
-  if (useCamera.value) startCamera();
-  else stopCamera();
-}
-
-async function startCamera() {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    videoRef.value.srcObject = stream;
-  } catch {
-    error.value = "Tidak dapat mengakses kamera";
-  }
-}
-
-function stopCamera() {
-  if (stream) {
-    stream.getTracks().forEach((t) => t.stop());
-    stream = null;
-  }
-}
-
-function cancelCamera() {
-  stopCamera();
-  useCamera.value = false;
 }
 
 function capturePhoto() {

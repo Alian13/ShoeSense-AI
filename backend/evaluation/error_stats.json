@@ -1,7 +1,7 @@
 {
-  "bahan_train_error": 0.0035,
+  "bahan_train_error": 0.0018,
   "bahan_val_error": 0.0,
-  "kotor_train_error": 0.0035,
+  "kotor_train_error": 0.0018,
   "kotor_val_error": 0.0,
   "total_images": 709,
   "train_images": 567,

@@ -142,7 +142,7 @@ def send_gemini_request(model_name, img_b64, prompt):
         return None
 
 # ====================================================
-# RUN 5 GEMINI MODELS (sekuensial)
+# RUN 5 GEMINI MODELS 
 # ====================================================
 def analyze_with_gemini(path):
     if not GEMINI_API_KEY:

@@ -8,8 +8,16 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
+
+# sklearn is required for label encoding, splitting and metrics
+try:
+    from sklearn.preprocessing import LabelEncoder
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import confusion_matrix, classification_report
+except ModuleNotFoundError:
+    print("ERROR: scikit-learn is not installed. Install it with:\n  pip install scikit-learn")
+    raise
+
 import matplotlib.pyplot as plt
 
 
@@ -20,7 +28,10 @@ BASE_DIR = os.path.join(os.getcwd(), "dataset")
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 8
 EPOCHS = 35
-MODEL_OUT = "shoe_model.h5"
+MODEL_OUT = "shoe_model.keras"
+
+# ensure evaluation output folder exists before any plotting/saving
+os.makedirs("evaluation", exist_ok=True)
 
 # === Ambil data manual ===
 image_paths, bahan_labels, kotor_labels = [], [], []
@@ -39,7 +50,6 @@ for bahan_class in os.listdir(BASE_DIR):
 print(f"🖼️ Total gambar: {len(image_paths)}")
 
 # === Encode label ===
-from sklearn.preprocessing import LabelEncoder
 le_bahan = LabelEncoder()
 le_kotor = LabelEncoder()
 bahan_encoded = le_bahan.fit_transform(bahan_labels)
@@ -208,7 +218,7 @@ with open("evaluation/error_stats.json", "w") as f:
 # =========================================================
 # 📚 STATISTIK PER-KELAS (Canvas / Kulit / Suede)
 # =========================================================
-from sklearn.metrics import classification_report, confusion_matrix
+
 import seaborn as sns
 import numpy as np
 
