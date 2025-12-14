@@ -4,3 +4,9 @@ matplotlib
 seaborn
 numpy
 pillow
+flask
+flask-cors
+gunicorn
+tensorflow-cpu
+opencv-python-headless
+

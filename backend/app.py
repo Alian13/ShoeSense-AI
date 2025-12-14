@@ -40,7 +40,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # ====================================================
 # LOAD LOCAL MODEL
 # ====================================================
-MODEL_PATH = "best_shoe_model.h5"
+MODEL_PATH = "best_shoe_model.keras"
 model = load_model(MODEL_PATH)
 
 shoe_checker = MobileNetV2(weights="imagenet")
