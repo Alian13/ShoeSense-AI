@@ -11,15 +11,8 @@
     <!-- Upload Area -->
     <main class="main-content">
       <div class="upload-box" @dragover.prevent @drop.prevent="onDrop">
-        <!-- Mode Kamera -->
-        <div v-if="useCamera" class="camera-wrapper">
-          <video ref="videoRef" autoplay playsinline></video>
-          <button class="capture-btn" @click="capturePhoto">Ambil Foto</button>
-          <button class="cancel-btn" @click="cancelCamera">✖</button>
-        </div>
-
         <!-- Mode Loading -->
-        <div v-else-if="loading" class="loading-overlay">
+        <div v-if="loading" class="loading-overlay">
           <div class="scan-full">
             <img
               v-if="previewUrl"
@@ -58,7 +51,7 @@
               />
             </svg>
             <h2>Unggah atau ambil foto sepatu kamu untuk dianalisis</h2>
-            <p>Klik untuk memilih atau foto gambar ke sini</p>
+            <p>Klik untuk memilih atau seret gambar ke sini</p>
           </label>
 
           <div v-if="previewUrl" class="preview-container">
@@ -66,6 +59,17 @@
             <button class="cancel-btn" @click="cancelUpload">✖</button>
           </div>
         </template>
+      </div>
+
+      <!-- Buttons -->
+      <div class="action-buttons">
+        <button
+          class="analyze-btn"
+          :disabled="loading || !selectedFile"
+          @click="uploadImage"
+        >
+          {{ loading ? "Menganalisis..." : "Analisis Sekarang" }}
+        </button>
       </div>
 
       <!-- Hasil -->
@@ -88,18 +92,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount, nextTick } from "vue";
+import { ref, computed, nextTick } from "vue";
 
-const API_BASE = "http://72.61.215.197:5000";
+const API_BASE = "http://127.0.0.1:5000";
 const selectedFile = ref(null);
 const previewUrl = ref(null);
-const videoRef = ref(null);
-let stream = null;
 const result = ref(null);
 const error = ref(null);
 const loading = ref(false);
-const showHistory = ref(false);
-const history = ref([]);
 const resultRef = ref(null);
 
 const loadingText = ref("AI sedang menganalisis gambar...");
@@ -191,45 +191,6 @@ async function uploadImage() {
     clearInterval(loadingInterval);
     loading.value = false;
   }
-}
-
-function capturePhoto() {
-  const video = videoRef.value;
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0);
-  canvas.toBlob((blob) => {
-    selectedFile.value = new File([blob], "photo.jpg", { type: "image/jpeg" });
-    previewUrl.value = URL.createObjectURL(blob);
-    stopCamera();
-    useCamera.value = false;
-  }, "image/jpeg");
-}
-
-onBeforeUnmount(stopCamera);
-
-function toggleHistory() {
-  const local = JSON.parse(localStorage.getItem("history") || "[]");
-  history.value = local;
-  showHistory.value = !showHistory.value;
-}
-function clearAllHistory() {
-  localStorage.removeItem("history");
-  history.value = [];
-}
-
-function deleteHistory(index) {
-  history.value.splice(index, 1);
-  localStorage.setItem("history", JSON.stringify(history.value));
-}
-
-function viewHistory(item) {
-  result.value = item.result;
-  previewUrl.value = item.image;
-  showHistory.value = false;
-  nextTick(() => resultRef.value?.scrollIntoView({ behavior: "smooth" }));
 }
 </script>
 
@@ -395,12 +356,7 @@ function viewHistory(item) {
   font-weight: 700;
   font-family: "Poppins", sans-serif;
   letter-spacing: 0.3px;
-  color: #1e40af; /* lebih elegan */
-}
-
-.history-btn:hover {
-  background: #1d4ed8;
-  box-shadow: 0 0 8px rgba(37, 99, 235, 0.35);
+  color: #1e40af;
 }
 
 /* =========================
@@ -483,39 +439,6 @@ function viewHistory(item) {
 }
 
 /* =========================
-   CAMERA MODE
-   ========================= */
-.camera-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.camera-wrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 14px;
-}
-
-.capture-btn {
-  position: absolute;
-  bottom: 14px;
-  right: 14px;
-  background: #2563eb;
-  color: white;
-  padding: 9px 14px;
-  border-radius: 8px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.capture-btn:hover {
-  background: #1e40af;
-}
-
-/* =========================
    LOADING OVERLAY
    ========================= */
 .loading-overlay {
@@ -587,15 +510,6 @@ function viewHistory(item) {
   cursor: not-allowed;
 }
 
-.camera-btn {
-  background: #e2e8f0;
-}
-
-.camera-btn:hover {
-  background: #cbd5e1;
-  transform: translateY(-2px);
-}
-
 /* =========================
    RESULT CARD
    ========================= */
@@ -642,99 +556,6 @@ function viewHistory(item) {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* =========================
-   HISTORY SIDEBAR
-   ========================= */
-.history-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 330px;
-  height: 100%;
-  background: #ffffff;
-  border-left: 1px solid #e5e7eb;
-  box-shadow: -3px 0 12px rgba(0, 0, 0, 0.08);
-  padding: 1rem;
-  overflow-y: auto;
-  animation: slideIn 0.35s ease;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-.history-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.clear-all {
-  background: #ef4444;
-  color: #fff;
-  padding: 6px 10px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.clear-all:hover {
-  background: #dc2626;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.15rem;
-  cursor: pointer;
-  color: #475569;
-}
-
-.history-item {
-  display: flex;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.history-item:hover {
-  background: #f8fafc;
-}
-
-.thumb {
-  width: 58px;
-  height: 58px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.delete-btn {
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: #ef4444;
-  font-size: 1rem;
-}
-
-.delete-btn:hover {
-  color: #dc2626;
-}
-
-/* No History */
-.empty-history {
-  color: #94a3b8;
-  text-align: center;
-  margin-top: 2rem;
 }
 
 /* TRANSITIONS */
